@@ -1,0 +1,242 @@
+{% extends 'base.html' %}
+
+{% block title %}Recipient Dashboard | Smart Blood Donation Management System{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2.5rem 0 4rem;">
+  <!-- Header & Actions -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <span class="section-tag"><i class="fa-solid fa-hand-holding-medical"></i> Patient & Recipient Portal</span>
+      <h1 style="font-size: 2rem; margin-bottom: 0.25rem;">Welcome, {{ current_user.full_name }}</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">
+        Submit blood requests, track real-time matching progress, and connect with volunteer donors.
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+      <a href="{{ url_for('find_blood') }}" class="btn btn-secondary">
+        <i class="fa-solid fa-magnifying-glass"></i> Search Blood & Banks
+      </a>
+      <button type="button" class="btn btn-primary" data-modal-target="createRequestModal">
+        <i class="fa-solid fa-plus-circle"></i> Create New Request
+      </button>
+    </div>
+  </div>
+
+  <!-- Active Requests Table -->
+  <div class="card" style="margin-bottom: 2.5rem;">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fa-solid fa-file-medical text-primary"></i>
+        My Blood Requests ({{ requests|length }})
+      </div>
+    </div>
+
+    {% if requests %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Request Code</th>
+              <th>Patient</th>
+              <th>Blood Group</th>
+              <th>Units</th>
+              <th>Urgency</th>
+              <th>Hospital & Area</th>
+              <th>Required Date</th>
+              <th>Matches</th>
+              <th>Live Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for req in requests %}
+            <tr>
+              <td><strong>{{ req.request_code }}</strong></td>
+              <td>{{ req.patient_name }}</td>
+              <td><span class="badge badge-blood">{{ req.blood_group }}</span></td>
+              <td><strong>{{ req.units_needed }}</strong></td>
+              <td>
+                <span class="badge {% if req.urgency == 'Critical' %}badge-critical{% elif req.urgency == 'High' %}badge-high{% else %}badge-routine{% endif %}">
+                  {{ req.urgency }}
+                </span>
+              </td>
+              <td>{{ req.hospital_name }} ({{ req.area }})</td>
+              <td>{{ req.required_date }}</td>
+              <td>
+                <span class="badge badge-routine">{{ req.match_count }} matched</span>
+                {% if req.accepted_count > 0 %}
+                  <span class="badge badge-success">{{ req.accepted_count }} accepted</span>
+                {% endif %}
+              </td>
+              <td>
+                <span class="badge {% if req.status == 'Fulfilled' %}badge-success{% elif req.status == 'Cancelled' %}badge-secondary{% else %}badge-warning{% endif %}">
+                  {{ req.status }}
+                </span>
+              </td>
+              <td>
+                <a href="{{ url_for('track_request', request_code=req.request_code) }}" class="btn btn-primary btn-sm">
+                  Track
+                </a>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 3rem 1rem;">
+        <i class="fa-solid fa-notes-medical" style="font-size: 2.5rem; color: var(--text-light); margin-bottom: 1rem;"></i>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">No Active Blood Requests</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+          Need blood units for a surgery or transfusion? Submit a request to start smart matching.
+        </p>
+        <button type="button" class="btn btn-primary btn-sm" data-modal-target="createRequestModal">
+          <i class="fa-solid fa-plus-circle"></i> Create Request Now
+        </button>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Matched Donors Contact List -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fa-solid fa-address-book text-primary"></i>
+        Matched Donors with Contact Clearance
+      </div>
+    </div>
+
+    {% if matches %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Request Code</th>
+              <th>Donor Name</th>
+              <th>Blood Group</th>
+              <th>Donor Area</th>
+              <th>Match Score</th>
+              <th>Status</th>
+              <th>Contact Phone</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in matches %}
+            <tr>
+              <td><strong>{{ m.request_code }}</strong></td>
+              <td><strong>{{ m.donor_name }}</strong></td>
+              <td><span class="badge badge-blood">{{ m.donor_blood_group }}</span></td>
+              <td>{{ m.donor_area }}</td>
+              <td><span class="badge badge-success">{{ m.compatibility_score }}%</span></td>
+              <td>
+                {% if m.status == 'Accepted' %}
+                  <span class="badge badge-success"><i class="fa-solid fa-check"></i> Accepted</span>
+                {% else %}
+                  <span class="badge badge-warning">Awaiting Confirmation</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if m.status == 'Accepted' %}
+                  <a href="tel:{{ m.donor_phone }}" style="font-weight: 700; color: var(--primary);">
+                    <i class="fa-solid fa-phone"></i> {{ m.donor_phone }}
+                  </a>
+                {% else %}
+                  <span style="color: var(--text-muted); font-size: 0.8rem;"><i class="fa-solid fa-lock"></i> Unlocked upon acceptance</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p style="color: var(--text-muted); padding: 1.5rem; text-align: center;">
+        No active donor matches to display. When you post a request, compatible donors will appear here.
+      </p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Modal: Create Blood Request -->
+<div class="modal-overlay" id="createRequestModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-size: 1.25rem;"><i class="fa-solid fa-plus-circle text-primary"></i> Submit Blood Request</h3>
+      <button class="modal-close" data-modal-close>&times;</button>
+    </div>
+
+    <form action="{{ url_for('create_blood_request') }}" method="POST">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="reqPatient">Patient Name *</label>
+          <input type="text" name="patient_name" id="reqPatient" class="form-control" placeholder="Full name of patient" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="reqBg">Blood Group *</label>
+          <select name="blood_group" id="reqBg" class="form-select" required>
+            {% for bg in blood_groups %}
+              <option value="{{ bg }}">{{ bg }} Blood Group</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="reqUnits">Units Needed *</label>
+          <input type="number" name="units_needed" id="reqUnits" class="form-control" min="1" max="15" value="2" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="reqUrgency">Urgency *</label>
+          <select name="urgency" id="reqUrgency" class="form-select" required>
+            <option value="Critical">🚨 Critical (< 4 Hours)</option>
+            <option value="High">⚠️ High (Within 24 Hours)</option>
+            <option value="Routine" selected>ℹ️ Routine (Scheduled)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="reqHospital">Hospital / Medical Center *</label>
+          <input type="text" name="hospital_name" id="reqHospital" class="form-control" placeholder="e.g. St. Mary Hospital" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="reqArea">City Area *</label>
+          <select name="area" id="reqArea" class="form-select" required>
+            {% for area in demo_areas %}
+              <option value="{{ area }}">{{ area }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="reqDate">Required Date *</label>
+          <input type="date" name="required_date" id="reqDate" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="reqPhone">Attending Phone *</label>
+          <input type="tel" name="contact_phone" id="reqPhone" class="form-control" value="{{ current_user.phone }}" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="reqReason">Medical Reason / Ward Details</label>
+        <input type="text" name="medical_reason" id="reqReason" class="form-control" placeholder="e.g. Orthopedic surgery, ICU Bed 12">
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1rem;">
+        <i class="fa-solid fa-paper-plane"></i> Submit Request
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+
+{% block title %}Blood Bank Inventory Management | Smart Blood Donation Management System{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2.5rem 0 4rem;">
+  <!-- Header & Actions -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <span class="section-tag"><i class="fa-solid fa-warehouse"></i> Inventory Logistics & Blood Bank Center</span>
+      <h1 style="font-size: 2rem; margin-bottom: 0.25rem;">{{ bank.org_name if bank else current_user.full_name }}</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">
+        <i class="fa-solid fa-location-dot"></i> {{ bank.address if bank else 'Medical Plaza' }} • License: <strong>{{ bank.license_number if bank else 'BB-2026' }}</strong>
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+      <button type="button" class="btn btn-secondary" data-modal-target="recordTransactionModal">
+        <i class="fa-solid fa-arrow-right-arrow-left"></i> Record Issue / Collection
+      </button>
+      <button type="button" class="btn btn-primary" data-modal-target="addBatchModal">
+        <i class="fa-solid fa-plus-circle"></i> Add Inventory Batch
+      </button>
+    </div>
+  </div>
+
+  <!-- Blood-Group Stock Levels Grid -->
+  <div style="margin-bottom: 2.5rem;">
+    <h3 style="font-size: 1.15rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+      <i class="fa-solid fa-droplet text-primary"></i> Blood Group Stock Levels & Safety Thresholds
+    </h3>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(135px, 1fr)); gap: 1rem;">
+      {% for bg, s in stock_dict.items() %}
+      <div class="card" style="text-align: center; padding: 1.25rem 0.75rem; border-top: 3px solid {% if s.total_units <= s.min_threshold %}var(--danger){% else %}var(--success){% endif %};">
+        <span class="badge badge-blood" style="margin-bottom: 0.5rem;">{{ bg }}</span>
+        <div style="font-family: var(--font-heading); font-size: 2rem; font-weight: 800; color: var(--text-main); line-height: 1;">
+          {{ s.total_units }}
+        </div>
+        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+          Units in Stock
+        </div>
+
+        {% if s.total_units <= s.min_threshold %}
+          <div style="font-size: 0.7rem; color: var(--danger); font-weight: 700; margin-top: 0.5rem;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Low Stock (≤{{ s.min_threshold }})
+          </div>
+        {% elif s.expiring_units > 0 %}
+          <div style="font-size: 0.7rem; color: var(--warning); font-weight: 700; margin-top: 0.5rem;">
+            <i class="fa-solid fa-clock"></i> {{ s.expiring_units }}u Near Expiry
+          </div>
+        {% else %}
+          <div style="font-size: 0.7rem; color: var(--success); font-weight: 700; margin-top: 0.5rem;">
+            <i class="fa-solid fa-circle-check"></i> Normal Reserve
+          </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Inventory Batches Table -->
+  <div class="card" style="margin-bottom: 2.5rem;">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fa-solid fa-boxes-stacked text-primary"></i>
+        Active Inventory Batches & Expiry Tracking ({{ batches|length }})
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        FIFO Auto-allocation Enabled
+      </div>
+    </div>
+
+    {% if batches %}
+      <div class="table-responsive">
+        <table class="table" id="inventoryTable">
+          <thead>
+            <tr>
+              <th>Batch Code</th>
+              <th>Blood Group</th>
+              <th>Units</th>
+              <th>Collection Date</th>
+              <th>Expiry Date</th>
+              <th>Storage Location</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for b in batches %}
+            <tr>
+              <td><strong>{{ b.batch_number }}</strong></td>
+              <td><span class="badge badge-blood">{{ b.blood_group }}</span></td>
+              <td><strong style="font-size: 1.1rem;">{{ b.units }}</strong></td>
+              <td>{{ b.collection_date }}</td>
+              <td>
+                <span {% if b.status == 'Expiring Soon' %}style="color: var(--danger); font-weight: 700;"{% endif %}>
+                  {{ b.expiry_date }}
+                </span>
+              </td>
+              <td>{{ b.storage_location }}</td>
+              <td>
+                <span class="badge {% if b.status == 'Available' %}badge-success{% elif b.status == 'Low Stock' %}badge-warning{% elif b.status == 'Expiring Soon' %}badge-critical{% else %}badge-secondary{% endif %}">
+                  {{ b.status }}
+                </span>
+              </td>
+              <td>
+                <form action="{{ url_for('delete_inventory_batch', batch_id=b.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Remove / dispose this inventory batch?');">
+                  <button type="submit" class="btn btn-secondary btn-sm" title="Remove Batch">
+                    <i class="fa-solid fa-trash text-danger"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p style="color: var(--text-muted); padding: 2rem; text-align: center;">No inventory batches recorded yet.</p>
+    {% endif %}
+  </div>
+
+  <!-- Split Grid: Transactions Log & Donor Appointments -->
+  <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 2rem;">
+    <!-- Left: Transaction Log -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="fa-solid fa-receipt text-primary"></i>
+          Inventory Transaction Audit Log
+        </div>
+      </div>
+
+      {% if transactions %}
+        <div class="table-responsive">
+          <table class="table" style="font-size: 0.85rem;">
+            <thead>
+              <tr>
+                <th>Type</th>
+                <th>Group</th>
+                <th>Units</th>
+                <th>Notes / Reference</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in transactions %}
+              <tr>
+                <td>
+                  <span class="badge {% if t.transaction_type == 'Collection' %}badge-success{% elif t.transaction_type == 'Issue' %}badge-routine{% else %}badge-secondary{% endif %}">
+                    {{ t.transaction_type }}
+                  </span>
+                </td>
+                <td><span class="badge badge-blood" style="font-size: 0.75rem;">{{ t.blood_group }}</span></td>
+                <td><strong>{{ t.units }}</strong></td>
+                <td>{{ t.notes }}</td>
+                <td><small style="color: var(--text-muted);">{{ t.created_at }}</small></td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p style="color: var(--text-muted); padding: 1rem; text-align: center;">No transactions logged yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Right: Donor Appointments -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="fa-solid fa-calendar-check text-primary"></i>
+          Scheduled Donor Appointments
+        </div>
+      </div>
+
+      {% if appointments %}
+        <div class="table-responsive">
+          <table class="table" style="font-size: 0.85rem;">
+            <thead>
+              <tr>
+                <th>Donor</th>
+                <th>Group</th>
+                <th>Date & Slot</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for apt in appointments %}
+              <tr>
+                <td>
+                  <strong>{{ apt.donor_name }}</strong><br>
+                  <small>{{ apt.donor_phone }}</small>
+                </td>
+                <td><span class="badge badge-blood" style="font-size: 0.75rem;">{{ apt.donor_blood_group }}</span></td>
+                <td>
+                  {{ apt.appointment_date }}<br>
+                  <small>{{ apt.time_slot }}</small>
+                </td>
+                <td>
+                  <span class="badge {% if apt.status == 'Scheduled' %}badge-success{% else %}badge-secondary{% endif %}">
+                    {{ apt.status }}
+                  </span>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p style="color: var(--text-muted); padding: 1.5rem; text-align: center;">No upcoming donor appointments.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Modal 1: Add Inventory Batch -->
+<div class="modal-overlay" id="addBatchModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-size: 1.25rem;"><i class="fa-solid fa-plus-circle text-primary"></i> Add New Blood Batch</h3>
+      <button class="modal-close" data-modal-close>&times;</button>
+    </div>
+
+    <form action="{{ url_for('add_inventory_batch') }}" method="POST">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="batchBg">Blood Group *</label>
+          <select name="blood_group" id="batchBg" class="form-select" required>
+            {% for bg in blood_groups %}
+              <option value="{{ bg }}">{{ bg }} Blood Group</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="batchUnits">Number of Units *</label>
+          <input type="number" name="units" id="batchUnits" class="form-control" min="1" max="100" value="5" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="batchCode">Batch Code / ID</label>
+          <input type="text" name="batch_number" id="batchCode" class="form-control" placeholder="Leave blank for auto-generation">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="batchThreshold">Min Alert Threshold</label>
+          <input type="number" name="min_threshold" id="batchThreshold" class="form-control" min="1" value="5">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="batchCollectDate">Collection Date *</label>
+          <input type="date" name="collection_date" id="batchCollectDate" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="batchExpiryDate">Expiry Date (Optional, Auto 35-day default)</label>
+          <input type="date" name="expiry_date" id="batchExpiryDate" class="form-control">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="batchLocation">Cold Storage Unit / Shelf</label>
+        <input type="text" name="storage_location" id="batchLocation" class="form-control" value="Cold Room Shelf A-1">
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1rem;">
+        Add Batch to Stock
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 2: Record Issue / Collection Transaction -->
+<div class="modal-overlay" id="recordTransactionModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-size: 1.25rem;"><i class="fa-solid fa-arrow-right-arrow-left text-primary"></i> Record Issue / Collection</h3>
+      <button class="modal-close" data-modal-close>&times;</button>
+    </div>
+
+    <form action="{{ url_for('record_inventory_transaction') }}" method="POST">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="transType">Transaction Type *</label>
+          <select name="transaction_type" id="transType" class="form-select" required>
+            <option value="Issue">🔴 Issue (Transfusion to Hospital/Patient)</option>
+            <option value="Collection">🟢 Collection (New Inflow from Donor Drive)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="transBg">Blood Group *</label>
+          <select name="blood_group" id="transBg" class="form-select" required>
+            {% for bg in blood_groups %}
+              <option value="{{ bg }}">{{ bg }} Blood Group</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="transUnits">Units *</label>
+        <input type="number" name="units" id="transUnits" class="form-control" min="1" max="50" value="2" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="transNotes">Recipient / Hospital Reference & Notes *</label>
+        <input type="text" name="notes" id="transNotes" class="form-control" placeholder="e.g. Issued to St. Mary Emergency Ward" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 1rem;">
+        Record Transaction & Update Balance
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const cDate = document.getElementById('batchCollectDate');
+    if (cDate && !cDate.value) {
+      cDate.value = new Date().toISOString().split('T')[0];
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block title %}About PBL Project | Smart Blood Donation Management System{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 3rem 0;">
+  <!-- Header -->
+  <div style="max-width: 800px; margin: 0 auto 3rem; text-align: center;">
+    <span class="section-tag">Project-Based Learning (PBL) Prototype</span>
+    <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">Smart Blood Donation Management System</h1>
+    <p style="font-size: 1.1rem; color: var(--text-muted); line-height: 1.7;">
+      An end-to-end digital solution addressing the challenges of blood shortages, fragmented communication, geographic matching delays, and inventory expiry in emergency healthcare.
+    </p>
+  </div>
+
+  <!-- Problem & Solution Grid -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 3rem;">
+    <div class="card" style="border-top: 4px solid var(--danger);">
+      <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; color: var(--danger);">
+        <i class="fa-solid fa-triangle-exclamation"></i> Real-World Problem
+      </h3>
+      <p style="color: var(--text-muted); margin-bottom: 1rem;">
+        In emergency situations (road accidents, trauma surgeries, postpartum hemorrhages), patient families often endure frantic manual telephone searches for matching donors. Concurrently, blood banks struggle with perishable inventory management, leading to stock wastage or unexpected shortages of rare Rh-negative blood groups.
+      </p>
+      <ul style="color: var(--text-muted); padding-left: 1.25rem; font-size: 0.925rem; line-height: 1.8;">
+        <li>Delayed emergency response times during critical golden hours.</li>
+        <li>Inability to pinpoint nearby eligible donors.</li>
+        <li>Lack of transparency on stock levels across distributed blood banks.</li>
+        <li>Repeated donor fatigue due to uncoordinated outreach.</li>
+      </ul>
+    </div>
+
+    <div class="card" style="border-top: 4px solid var(--success);">
+      <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem; color: var(--success);">
+        <i class="fa-solid fa-circle-check"></i> Our Smart Solution
+      </h3>
+      <p style="color: var(--text-muted); margin-bottom: 1rem;">
+        This platform unifies all stakeholders — donors, recipients, hospitals, blood banks, and administrative regulators — on a synchronized digital platform powered by a multi-factor smart matching engine and FIFO inventory tracking.
+      </p>
+      <ul style="color: var(--text-muted); padding-left: 1.25rem; font-size: 0.925rem; line-height: 1.8;">
+        <li>Algorithmic ABO/Rh compatibility and proximity ranking.</li>
+        <li>Automated emergency request dispatch and status timelines.</li>
+        <li>Real-time blood bank inventory with expiry warning thresholds.</li>
+        <li>Role-tailored dashboards with self-service donor appointment booking.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Technical Architecture Details -->
+  <div class="card" style="margin-bottom: 3rem;">
+    <h3 style="margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.6rem;">
+      <i class="fa-solid fa-code" style="color: var(--primary);"></i> Technology Stack & Implementation
+    </h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem;">
+      <div style="background: var(--bg-main); padding: 1.25rem; border-radius: var(--radius-md);">
+        <h4 style="font-size: 1rem; margin-bottom: 0.5rem;"><i class="fa-brands fa-python text-primary"></i> Backend</h4>
+        <p style="font-size: 0.875rem; color: var(--text-muted);">
+          Python Flask with modular routing, secure session management, Werkzeug password hashing, and role-based access decorators.
+        </p>
+      </div>
+      <div style="background: var(--bg-main); padding: 1.25rem; border-radius: var(--radius-md);">
+        <h4 style="font-size: 1rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-database text-primary"></i> Persistence</h4>
+        <p style="font-size: 0.875rem; color: var(--text-muted);">
+          SQLite relational schema with normalized foreign key relationships, audit transaction logging, and automatic demo seed generator.
+        </p>
+      </div>
+      <div style="background: var(--bg-main); padding: 1.25rem; border-radius: var(--radius-md);">
+        <h4 style="font-size: 1rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-palette text-primary"></i> Frontend UI</h4>
+        <p style="font-size: 0.875rem; color: var(--text-muted);">
+          Custom CSS3 design system with responsive flexbox/grid, Google Fonts (Outfit & Plus Jakarta Sans), Font Awesome icons, and Chart.js.
+        </p>
+      </div>
+      <div style="background: var(--bg-main); padding: 1.25rem; border-radius: var(--radius-md);">
+        <h4 style="font-size: 1rem; margin-bottom: 0.5rem;"><i class="fa-solid fa-brain text-primary"></i> Matching Algorithm</h4>
+        <p style="font-size: 0.875rem; color: var(--text-muted);">
+          Multi-variable rule-based matching: ABO/Rh red-cell compatibility matrix, Haversine geographic distance, availability, and cooldown checks.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Medical Disclaimer -->
+  <div class="alert alert-danger" style="display: block; padding: 1.5rem; line-height: 1.7;">
+    <h4 style="margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+      <i class="fa-solid fa-hand-holding-medical"></i> Important Academic & Medical Disclaimer
+    </h4>
+    <p style="font-size: 0.9rem; margin-bottom: 0.5rem;">
+      This software application is an engineering demonstration prototype created for an academic college Project-Based Learning (PBL) challenge. 
+      The algorithmic matching module is designed to provide ranked recommendations for initial review. It is NOT a medical device, nor does it guarantee physiological compatibility or clinical eligibility.
+    </p>
+    <p style="font-size: 0.9rem; margin: 0;">
+      All prospective blood donations and transfusions must strictly undergo standard medical screening, infectious disease testing, serological cross-matching, and formal physician approval under certified blood banking regulations.
+    </p>
+  </div>
+</div>
+{% endblock %}

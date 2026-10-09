@@ -1,0 +1,256 @@
+{% extends 'base.html' %}
+
+{% block title %}System Administrator Dashboard | Smart Blood Donation Management System{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2.5rem 0 4rem;">
+  <!-- Header & Reset Demo Action -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <span class="section-tag"><i class="fa-solid fa-shield-halved"></i> Governance & Monitoring</span>
+      <h1 style="font-size: 2rem; margin-bottom: 0.25rem;">Administrator Dashboard</h1>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">
+        Complete platform telemetry, user role audits, blood reserve analytics, and system administration.
+      </p>
+    </div>
+
+    <!-- Quick Reseed DB Button for PBL Live Presentations -->
+    <div>
+      <form action="{{ url_for('admin_reseed_db') }}" method="POST" onsubmit="return confirm('Reseed database with fresh demonstration records?');">
+        <button type="submit" class="btn btn-secondary btn-sm" style="border-color: var(--warning); color: #b45309;">
+          <i class="fa-solid fa-rotate-right"></i> Reset & Reseed Demo Data
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- KPI Cards Grid -->
+  <div class="kpi-cards-grid">
+    <div class="kpi-card" style="border-left: 4px solid var(--primary);">
+      <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+        Registered Donors
+      </div>
+      <div class="kpi-num" style="color: var(--primary);">{{ kpis.donors }}</div>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">Across all 8 blood groups</div>
+    </div>
+
+    <div class="kpi-card" style="border-left: 4px solid var(--info);">
+      <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+        Recipients & Hospitals
+      </div>
+      <div class="kpi-num" style="color: var(--info);">{{ kpis.recipients + kpis.hospitals }}</div>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">{{ kpis.hospitals }} certified hospitals</div>
+    </div>
+
+    <div class="kpi-card" style="border-left: 4px solid var(--success);">
+      <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+        Available Units in Stock
+      </div>
+      <div class="kpi-num" style="color: var(--success);">{{ kpis.total_units }}</div>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">In {{ kpis.blood_banks }} blood banks</div>
+    </div>
+
+    <div class="kpi-card" style="border-left: 4px solid var(--warning);">
+      <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+        Active Blood Requests
+      </div>
+      <div class="kpi-num" style="color: #b45309;">{{ kpis.active_requests }}</div>
+      <div style="font-size: 0.75rem; color: var(--text-muted);">{{ kpis.completed_requests }} fulfilled transfusions</div>
+    </div>
+  </div>
+
+  <!-- Analytics Charts Section (Chart.js) -->
+  <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 2rem; margin-bottom: 2.5rem;">
+    <!-- Chart 1: Blood Group Distribution -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="fa-solid fa-chart-pie text-primary"></i>
+          Blood Group Stock Distribution (Units)
+        </div>
+      </div>
+      <div style="height: 260px; position: relative;">
+        <canvas id="bgInventoryChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Chart 2: Requests by Status -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <i class="fa-solid fa-chart-simple text-primary"></i>
+          Requests by Workflow Status
+        </div>
+      </div>
+      <div style="height: 260px; position: relative;">
+        <canvas id="requestStatusChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Low Stock & Near Expiry Alerts -->
+  {% if alerts %}
+  <div class="card" style="margin-bottom: 2.5rem; border-left: 4px solid var(--danger);">
+    <div class="card-header">
+      <div class="card-title" style="color: var(--danger);">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        System-Wide Low-Stock & Expiry Alerts ({{ alerts|length }})
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Blood Center</th>
+            <th>Batch</th>
+            <th>Group</th>
+            <th>Units</th>
+            <th>Expiry Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in alerts %}
+          <tr>
+            <td><strong>{{ a.org_name }}</strong></td>
+            <td>{{ a.batch_number }}</td>
+            <td><span class="badge badge-blood">{{ a.blood_group }}</span></td>
+            <td><strong>{{ a.units }}</strong></td>
+            <td>{{ a.expiry_date }}</td>
+            <td>
+              <span class="badge {% if a.status == 'Expired' or a.status == 'Expiring Soon' %}badge-critical{% else %}badge-warning{% endif %}">
+                {{ a.status }}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- User Accounts Management Table -->
+  <div class="card" style="margin-bottom: 2.5rem;">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fa-solid fa-users-gear text-primary"></i>
+        Platform User Accounts ({{ users|length }})
+      </div>
+      <input type="text" id="userFilterInput" placeholder="Quick search user..." class="form-control" style="max-width: 250px; padding: 0.35rem 0.75rem; font-size: 0.85rem;" onkeyup="filterTable('userFilterInput', 'usersTable')">
+    </div>
+
+    <div class="table-responsive">
+      <table class="table" id="usersTable">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Full Name</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Phone</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td>#{{ u.id }}</td>
+            <td><strong>{{ u.full_name }}</strong></td>
+            <td>{{ u.email }}</td>
+            <td>
+              <span class="role-tag">{{ u.role.replace('_', ' ') }}</span>
+            </td>
+            <td>{{ u.phone }}</td>
+            <td>
+              <span class="badge {% if u.status == 'active' %}badge-success{% else %}badge-critical{% endif %}">
+                {{ u.status }}
+              </span>
+            </td>
+            <td>
+              {% if u.id != current_user.id %}
+                <form action="{{ url_for('admin_toggle_user_status', u_id=u.id) }}" method="POST" style="margin: 0;">
+                  <button type="submit" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.6rem;">
+                    {% if u.status == 'active' %}Suspend{% else %}Activate{% endif %}
+                  </button>
+                </form>
+              {% else %}
+                <span style="color: var(--text-muted); font-size: 0.75rem;">Self (Admin)</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- All Blood Requests Master Audit Table -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fa-solid fa-list-check text-primary"></i>
+        All System Blood Requests ({{ requests|length }})
+      </div>
+      <input type="text" id="reqFilterInput" placeholder="Search requests..." class="form-control" style="max-width: 250px; padding: 0.35rem 0.75rem; font-size: 0.85rem;" onkeyup="filterTable('reqFilterInput', 'requestsTable')">
+    </div>
+
+    <div class="table-responsive">
+      <table class="table" id="requestsTable">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Patient</th>
+            <th>Group</th>
+            <th>Units</th>
+            <th>Urgency</th>
+            <th>Hospital & Area</th>
+            <th>Requester</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for req in requests %}
+          <tr>
+            <td><strong>{{ req.request_code }}</strong></td>
+            <td>{{ req.patient_name }}</td>
+            <td><span class="badge badge-blood">{{ req.blood_group }}</span></td>
+            <td>{{ req.units_needed }}</td>
+            <td>
+              <span class="badge {% if req.urgency == 'Critical' %}badge-critical{% elif req.urgency == 'High' %}badge-high{% else %}badge-routine{% endif %}">
+                {{ req.urgency }}
+              </span>
+            </td>
+            <td>{{ req.hospital_name }} ({{ req.area }})</td>
+            <td>{{ req.requester_name }}</td>
+            <td>
+              <span class="badge {% if req.status == 'Fulfilled' %}badge-success{% elif req.status == 'Cancelled' %}badge-secondary{% else %}badge-warning{% endif %}">
+                {{ req.status }}
+              </span>
+            </td>
+            <td>
+              <a href="{{ url_for('track_request', request_code=req.request_code) }}" class="btn btn-primary btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.6rem;">
+                Audit
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const bgData = {{ bg_chart_data | tojson }};
+    const statusData = {{ status_chart_data | tojson }};
+    initAdminCharts(bgData, statusData);
+  });
+</script>
+{% endblock %}

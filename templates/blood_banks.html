@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Blood Banks & Hospital Directory | Smart Blood Donation Management System{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2.5rem 0 4rem;">
+  <!-- Header -->
+  <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <span class="section-tag"><i class="fa-solid fa-hospital"></i> Network Directory</span>
+      <h1 style="font-size: 2.25rem; margin-bottom: 0.5rem;">Participating Blood Banks & Healthcare Centers</h1>
+      <p style="color: var(--text-muted); font-size: 1.05rem;">
+        Certified medical centers, storage facilities, and blood banks integrated with real-time inventory tracking.
+      </p>
+    </div>
+    <a href="{{ url_for('find_blood') }}" class="btn btn-primary">
+      <i class="fa-solid fa-magnifying-glass"></i> Search by Blood Group
+    </a>
+  </div>
+
+  <!-- Organizations Directory Cards -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.75rem;">
+    {% for org in organizations %}
+    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+      <div>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+          <span class="badge {% if org.org_type == 'blood_bank' %}badge-success{% else %}badge-routine{% endif %}">
+            <i class="fa-solid {% if org.org_type == 'blood_bank' %}fa-warehouse{% else %}fa-hospital{% endif %}"></i>
+            {{ org.org_type.replace('_', ' ').title() }}
+          </span>
+          {% if org.verified %}
+            <span style="font-size: 0.8rem; color: var(--success); font-weight: 700;">
+              <i class="fa-solid fa-circle-check"></i> Certified Center
+            </span>
+          {% endif %}
+        </div>
+
+        <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem;">{{ org.org_name }}</h3>
+        
+        <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+          <i class="fa-solid fa-location-dot" style="color: var(--primary);"></i> {{ org.address }}, {{ org.area }}, {{ org.city }}
+        </p>
+
+        <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+          <i class="fa-solid fa-clock" style="color: var(--info);"></i> Hours: <strong>{{ org.operating_hours or '24/7 Service' }}</strong>
+        </p>
+
+        <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+          <i class="fa-solid fa-id-badge"></i> License: {{ org.license_number or 'Certified Facility' }}
+        </p>
+
+        <!-- Live Stock by Blood Group if Blood Bank -->
+        {% if org.org_type == 'blood_bank' and bank_stocks.get(org.user_id) %}
+          <div style="background: var(--bg-main); padding: 0.85rem; border-radius: var(--radius-md); margin-top: 1rem;">
+            <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem;">
+              Current Available Units:
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+              {% for bg, count in bank_stocks[org.user_id].items() %}
+                <span class="badge badge-blood" style="font-size: 0.75rem;">
+                  {{ bg }}: {{ count }}u
+                </span>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Action Footer -->
+      <div style="border-top: 1px solid var(--border-light); padding-top: 1rem; margin-top: 1.25rem; display: flex; justify-content: space-between; align-items: center;">
+        <div style="font-size: 0.875rem; font-weight: 700;">
+          <i class="fa-solid fa-phone" style="color: var(--primary);"></i> {{ org.emergency_helpline or org.phone }}
+        </div>
+        
+        {% if current_user and current_user.role == 'donor' %}
+          <a href="{{ url_for('donor_dashboard') }}" class="btn btn-outline-primary btn-sm">
+            <i class="fa-solid fa-calendar-check"></i> Book Donation
+          </a>
+        {% else %}
+          <a href="{{ url_for('login') }}" class="btn btn-secondary btn-sm">
+            <i class="fa-solid fa-arrow-right"></i> Portal Access
+          </a>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Blood Donation Management System | Home{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <div class="hero-badge">
+          <i class="fa-solid fa-heart-pulse"></i>
+          Next-Gen Centralized Healthcare Logistics
+        </div>
+        <h1 class="hero-title">
+          Every Drop Counts.<br>
+          <span>Every Donor Matters.</span>
+        </h1>
+        <p class="hero-subtitle">
+          An intelligent life-saving network connecting volunteer blood donors, emergency recipients, hospitals, and blood banks. Find compatible blood units instantly, respond to urgent trauma alerts, and schedule verified donations.
+        </p>
+
+        <div class="hero-actions">
+          <a href="{{ url_for('find_blood') }}" class="btn btn-primary btn-lg" id="heroFindBloodBtn">
+            <i class="fa-solid fa-magnifying-glass"></i> Find Compatible Blood
+          </a>
+          <a href="{{ url_for('register') }}?role=donor" class="btn btn-secondary btn-lg" id="heroBecomeDonorBtn">
+            <i class="fa-solid fa-hand-holding-heart" style="color: var(--primary);"></i> Become a Donor
+          </a>
+          <a href="{{ url_for('emergency_request') }}" class="btn btn-emergency btn-lg" id="heroEmergencyBtn">
+            <i class="fa-solid fa-truck-medical"></i> Post Emergency Request
+          </a>
+        </div>
+
+        <div class="hero-features">
+          <div class="feature-item">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>ABO/Rh Smart Matching</span>
+          </div>
+          <div class="feature-item">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>Live Bank Inventory</span>
+          </div>
+          <div class="feature-item">
+            <i class="fa-solid fa-circle-check"></i>
+            <span>Real-time Request Timeline</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Finder Card -->
+      <div>
+        <div class="hero-card">
+          <div class="hero-card-header">
+            <div class="hero-card-title">
+              <i class="fa-solid fa-droplet text-danger"></i>
+              <span>Quick Blood Search</span>
+            </div>
+            <span class="badge badge-success">Live Network</span>
+          </div>
+
+          <form action="{{ url_for('find_blood') }}" method="GET">
+            <div class="form-group">
+              <label class="form-label" for="heroBgSelect">Recipient Blood Group Needed</label>
+              <select name="blood_group" id="heroBgSelect" class="form-select">
+                {% for bg in blood_groups %}
+                  <option value="{{ bg }}" {% if bg == 'O+' %}selected{% endif %}>{{ bg }} Blood Group</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="heroAreaSelect">Location / City Area</label>
+              <select name="area" id="heroAreaSelect" class="form-select">
+                {% for area in demo_areas %}
+                  <option value="{{ area }}">{{ area }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="heroUrgencySelect">Urgency Level</label>
+              <select name="urgency" id="heroUrgencySelect" class="form-select">
+                <option value="Critical">🚨 Critical (Transfusion in < 4 Hours)</option>
+                <option value="High">⚠️ High (Transfusion within 24 Hours)</option>
+                <option value="Routine" selected>ℹ️ Routine (Scheduled Procedure)</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block" id="heroSearchSubmitBtn">
+              <i class="fa-solid fa-bolt"></i> Match Nearby Donors & Inventory
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Counters Section -->
+<section class="stats-section">
+  <div class="container">
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-icon">
+          <i class="fa-solid fa-users"></i>
+        </div>
+        <div>
+          <div class="stat-number">{{ stats.donors }}</div>
+          <div class="stat-label">Registered Donors</div>
+        </div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-icon" style="background: #e0f2fe; color: #0284c7;">
+          <i class="fa-solid fa-boxes-stacked"></i>
+        </div>
+        <div>
+          <div class="stat-number">{{ stats.available_units }}</div>
+          <div class="stat-label">Available Units in Stock</div>
+        </div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-icon" style="background: #fef3c7; color: #b45309;">
+          <i class="fa-solid fa-hospital"></i>
+        </div>
+        <div>
+          <div class="stat-number">{{ stats.blood_banks }}</div>
+          <div class="stat-label">Certified Blood Banks</div>
+        </div>
+      </div>
+
+      <div class="stat-box">
+        <div class="stat-icon" style="background: var(--success-bg); color: var(--success);">
+          <i class="fa-solid fa-shield-heart"></i>
+        </div>
+        <div>
+          <div class="stat-number">{{ stats.fulfilled }}</div>
+          <div class="stat-label">Fulfilled Lifesaving Transfusions</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Urgent Blood Requests Ticker Section -->
+{% if urgent_requests %}
+<section style="padding: 3rem 0; background: #fff;">
+  <div class="container">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.5rem;">
+      <div>
+        <span class="section-tag" style="color: var(--danger);"><i class="fa-solid fa-circle-exclamation"></i> High Priority</span>
+        <h2 style="font-size: 1.75rem;">Active Urgent Blood Requests</h2>
+      </div>
+      <a href="{{ url_for('emergency_request') }}" class="btn btn-outline-primary btn-sm">Submit New Request</a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+      {% for req in urgent_requests %}
+      <div class="card" style="border-left: 4px solid var(--primary);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+          <span class="badge badge-blood">{{ req.blood_group }}</span>
+          <span class="badge {% if req.urgency == 'Critical' %}badge-critical{% else %}badge-high{% endif %}">
+            <i class="fa-solid fa-fire"></i> {{ req.urgency }}
+          </span>
+        </div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.35rem;">{{ req.patient_name }}</h3>
+        <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+          <i class="fa-solid fa-hospital"></i> {{ req.hospital_name }} ({{ req.area }})<br>
+          <i class="fa-solid fa-cubes"></i> Needed: <strong>{{ req.units_needed }} Unit(s)</strong> • Date: {{ req.required_date }}
+        </p>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-light); padding-top: 0.75rem;">
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Code: {{ req.request_code }}</span>
+          <a href="{{ url_for('track_request', request_code=req.request_code) }}" class="btn btn-primary btn-sm">
+            Track Status <i class="fa-solid fa-arrow-right"></i>
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<!-- How It Works Section -->
+<section style="padding: 4.5rem 0; background: var(--bg-main); border-bottom: 1px solid var(--border-color);">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">Streamlined Process</span>
+      <h2 class="section-title">How the Smart System Works</h2>
+      <p class="section-subtitle">A synchronized four-party workflow designed to eliminate emergency search delays and simplify donor management.</p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <div class="step-icon">
+          <i class="fa-solid fa-id-card-clip"></i>
+        </div>
+        <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem;">1. Register & Profile</h3>
+        <p style="color: var(--text-muted); font-size: 0.925rem;">
+          Donors create a verified profile specifying blood group, recovery interval, and location. Blood banks log verified inventory batches.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <div class="step-icon" style="background: #e0f2fe; color: #0284c7;">
+          <i class="fa-solid fa-microchip"></i>
+        </div>
+        <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem;">2. Smart Algorithmic Match</h3>
+        <p style="color: var(--text-muted); font-size: 0.925rem;">
+          When an urgent or routine request is placed, our rule-based compatibility engine matches ABO/Rh compatibility, distance proximity, and donor cooldown.
+        </p>
+      </div>
+
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <div class="step-icon" style="background: var(--success-bg); color: var(--success);">
+          <i class="fa-solid fa-heart-circle-check"></i>
+        </div>
+        <h3 style="font-size: 1.25rem; margin-bottom: 0.75rem;">3. Connect & Transfuse</h3>
+        <p style="color: var(--text-muted); font-size: 0.925rem;">
+          Donors accept invitations in one click, appointments are logged at licensed centres, and patients receive life-saving blood without delay.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Interactive Blood Compatibility Matrix Explorer -->
+<section style="padding: 4.5rem 0; background: #ffffff;">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">Clinical Red-Cell Rules</span>
+      <h2 class="section-title">Blood Group Compatibility Guide</h2>
+      <p class="section-subtitle">Explore biological donor-recipient compatibility rules used by our smart matching engine.</p>
+    </div>
+
+    <!-- Interactive Selector Widget -->
+    <div class="card" style="max-width: 800px; margin: 0 auto 3rem; background: var(--bg-main);">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center;">
+        <div>
+          <label class="form-label" for="compatGroupSelect" style="font-size: 1rem; font-weight: 700;">Select Any Blood Group to Inspect:</label>
+          <select id="compatGroupSelect" class="form-select" style="font-size: 1.1rem; font-weight: 700; padding: 0.75rem;">
+            {% for bg in blood_groups %}
+              <option value="{{ bg }}" {% if bg == 'O+' %}selected{% endif %}>{{ bg }} Group</option>
+            {% endfor %}
+          </select>
+          <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">
+            <i class="fa-solid fa-info-circle"></i> O- is universal red-cell donor; AB+ is universal recipient.
+          </small>
+        </div>
+
+        <div>
+          <div style="margin-bottom: 1rem;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Can Receive Red Cells From:</span>
+            <div id="compatResultList" style="margin-top: 0.35rem;">
+              <span class="compat-pill">O-</span>
+              <span class="compat-pill">O+</span>
+            </div>
+          </div>
+
+          <div>
+            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Can Donate Red Cells To:</span>
+            <div id="compatGiveList" style="margin-top: 0.35rem;">
+              <span class="compat-pill">O+</span>
+              <span class="compat-pill">A+</span>
+              <span class="compat-pill">B+</span>
+              <span class="compat-pill">AB+</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- All 8 Blood Group Compatibility Cards -->
+    <div class="compatibility-grid">
+      {% for bg, donors in compatibility_map.items() %}
+      <div class="compat-card">
+        <div class="compat-header">
+          <span class="badge badge-blood">{{ bg }}</span>
+          <span style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted);">
+            {% if bg == 'AB+' %}Universal Recipient{% elif bg == 'O-' %}Universal Donor{% else %}Specific Compatibility{% endif %}
+          </span>
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.25rem;">Can receive from:</div>
+        <div class="compat-pill-list">
+          {% for d in donors %}
+            <span class="compat-pill">{{ d }}</span>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Key Platform Benefits -->
+<section style="padding: 4.5rem 0; background: var(--bg-main); border-top: 1px solid var(--border-color);">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-tag">Value Proposition</span>
+      <h2 class="section-title">Why Smart Blood Donation Matters</h2>
+      <p class="section-subtitle">Addressing fragmented communication, delayed response times, and expired blood inventories.</p>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.75rem;">
+      <div class="card">
+        <div style="width: 48px; height: 48px; border-radius: var(--radius-md); background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 1rem;">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+        </div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Zero Wasted Time in Emergencies</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          Critical requests instantly ping nearby matched donors, cutting down the traditional multi-hour phone-tree delay to minutes.
+        </p>
+      </div>
+
+      <div class="card">
+        <div style="width: 48px; height: 48px; border-radius: var(--radius-md); background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 1rem;">
+          <i class="fa-solid fa-warehouse"></i>
+        </div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">FIFO Inventory & Expiry Alerts</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          Blood banks monitor stock thresholds, shelf lives, and expiry dates to avoid discarding rare units.
+        </p>
+      </div>
+
+      <div class="card">
+        <div style="width: 48px; height: 48px; border-radius: var(--radius-md); background: var(--success-bg); color: var(--success); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 1rem;">
+          <i class="fa-solid fa-user-shield"></i>
+        </div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">Donor Cooldown & Safety</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          Smart recovery countdowns prevent over-donation while ensuring donors are contacted only when eligible.
+        </p>
+      </div>
+
+      <div class="card">
+        <div style="width: 48px; height: 48px; border-radius: var(--radius-md); background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 1rem;">
+          <i class="fa-solid fa-timeline"></i>
+        </div>
+        <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;">End-to-End Status Tracking</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          Live status timeline keeps patients, hospitals, and dispatchers informed across all stages from matching to transfusion.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Call to Action Banner -->
+<section style="background: var(--primary-gradient); color: #fff; padding: 4rem 0; text-align: center;">
+  <div class="container">
+    <h2 style="font-size: 2.4rem; color: #fff; margin-bottom: 1rem;">Ready to Save Lives in Your Community?</h2>
+    <p style="font-size: 1.15rem; max-width: 600px; margin: 0 auto 2rem; opacity: 0.9;">
+      Join hundreds of registered volunteer donors and medical centres already active on our platform.
+    </p>
+    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+      <a href="{{ url_for('register') }}?role=donor" class="btn btn-secondary btn-lg" style="color: var(--primary); font-weight: 700;">
+        Sign Up as a Donor
+      </a>
+      <a href="{{ url_for('emergency_request') }}" class="btn btn-emergency btn-lg" style="background: #1e293b; color: #fff;">
+        Submit Blood Request
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

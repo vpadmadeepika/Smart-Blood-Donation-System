@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+
+{% block title %}Request {{ blood_request.request_code }} Status | Smart Blood Donation Management System{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2.5rem 0 4rem; max-width: 980px;">
+  <!-- Top Navigation & Badges -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <a href="{{ url_for('user_home_redirect') }}" class="btn btn-secondary btn-sm" style="margin-bottom: 0.5rem;">
+        <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+      </a>
+      <h1 style="font-size: 2rem; margin: 0;">
+        Blood Request <span style="color: var(--primary);">{{ blood_request.request_code }}</span>
+      </h1>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem;">
+        Created on {{ blood_request.created_at }} by {{ blood_request.requester_name }}
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 0.5rem; align-items: center;">
+      <span class="badge badge-blood" style="font-size: 1.1rem; padding: 0.4rem 0.9rem;">
+        {{ blood_request.blood_group }}
+      </span>
+      <span class="badge {% if blood_request.urgency == 'Critical' %}badge-critical{% elif blood_request.urgency == 'High' %}badge-high{% else %}badge-routine{% endif %}" style="font-size: 0.85rem;">
+        {{ blood_request.urgency }}
+      </span>
+      <span class="badge badge-success" style="font-size: 0.85rem;">
+        {{ blood_request.status }}
+      </span>
+    </div>
+  </div>
+
+  <!-- Interactive 5-Step Workflow Timeline -->
+  <div class="card" style="margin-bottom: 2rem;">
+    <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">
+      <i class="fa-solid fa-timeline text-primary"></i> Live Request Workflow Tracking
+    </h3>
+    
+    {% set stages = ['Submitted', 'Matching in Progress', 'Donors Notified', 'Response Received', 'Fulfilled'] %}
+    {% set current_idx = 0 %}
+    {% if blood_request.status == 'Matching in Progress' %}
+      {% set current_idx = 1 %}
+    {% elif blood_request.status == 'Donors Notified' %}
+      {% set current_idx = 2 %}
+    {% elif blood_request.status == 'Response Received' %}
+      {% set current_idx = 3 %}
+    {% elif blood_request.status == 'Fulfilled' %}
+      {% set current_idx = 4 %}
+    {% elif blood_request.status == 'Cancelled' %}
+      {% set current_idx = -1 %}
+    {% endif %}
+
+    {% if blood_request.status == 'Cancelled' %}
+      <div class="alert alert-danger" style="margin: 1.5rem 0 0;">
+        <i class="fa-solid fa-ban"></i> This blood request was marked as <strong>Cancelled</strong>.
+      </div>
+    {% else %}
+      <div class="timeline-container">
+        {% for stage in stages %}
+          {% set step_num = loop.index0 %}
+          <div class="timeline-step {% if step_num < current_idx %}completed{% elif step_num == current_idx %}active{% endif %}">
+            <div class="step-bullet">
+              {% if step_num < current_idx %}
+                <i class="fa-solid fa-check"></i>
+              {% else %}
+                {{ loop.index }}
+              {% endif %}
+            </div>
+            <div class="step-text">{{ stage }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Request Details & Hospital Grid -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+    <!-- Medical & Patient Info -->
+    <div class="card">
+      <h3 style="font-size: 1.15rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
+        <i class="fa-solid fa-user-injured text-primary"></i> Patient & Requirement Details
+      </h3>
+      <table class="table" style="font-size: 0.875rem;">
+        <tbody>
+          <tr>
+            <th style="width: 40%;">Patient Name:</th>
+            <td><strong>{{ blood_request.patient_name }}</strong></td>
+          </tr>
+          <tr>
+            <th>Blood Group:</th>
+            <td><span class="badge badge-blood">{{ blood_request.blood_group }}</span></td>
+          </tr>
+          <tr>
+            <th>Units Needed:</th>
+            <td><strong>{{ blood_request.units_needed }} Unit(s)</strong></td>
+          </tr>
+          <tr>
+            <th>Required Date / Time:</th>
+            <td>{{ blood_request.required_date }} ({{ blood_request.required_time or 'Immediate' }})</td>
+          </tr>
+          <tr>
+            <th>Reason / Diagnosis:</th>
+            <td>{{ blood_request.medical_reason or 'Emergency medical transfusion' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Hospital & Contact Info -->
+    <div class="card">
+      <h3 style="font-size: 1.15rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
+        <i class="fa-solid fa-hospital text-primary"></i> Hospital & Attending Contact
+      </h3>
+      <table class="table" style="font-size: 0.875rem;">
+        <tbody>
+          <tr>
+            <th style="width: 40%;">Hospital:</th>
+            <td><strong>{{ blood_request.hospital_name }}</strong></td>
+          </tr>
+          <tr>
+            <th>Area / District:</th>
+            <td>{{ blood_request.area }}, {{ blood_request.city }}</td>
+          </tr>
+          <tr>
+            <th>Address / Ward:</th>
+            <td>{{ blood_request.hospital_address or 'Main Emergency Department' }}</td>
+          </tr>
+          <tr>
+            <th>Emergency Phone:</th>
+            <td>
+              <a href="tel:{{ blood_request.contact_phone }}" style="font-weight: 700; color: var(--primary);">
+                <i class="fa-solid fa-phone"></i> {{ blood_request.contact_phone }}
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <th>Status Update:</th>
+            <td>Last modified {{ blood_request.updated_at }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Matched Donors Section -->
+  <div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fa-solid fa-users text-primary"></i> Compatible Donors Matched for this Request
+      </div>
+      <span class="badge badge-routine">{{ matches|length }} Donor(s) Logged</span>
+    </div>
+
+    {% if matches %}
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Donor Candidate</th>
+              <th>Blood Group</th>
+              <th>Location</th>
+              <th>Distance</th>
+              <th>Match Score</th>
+              <th>Donor Response</th>
+              <th>Contact Info</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in matches %}
+            <tr>
+              <td><strong>{{ m.full_name }}</strong></td>
+              <td><span class="badge badge-blood">{{ m.blood_group }}</span></td>
+              <td>{{ m.area }}</td>
+              <td>~{{ m.distance_km }} km</td>
+              <td>
+                <span class="badge badge-success">{{ m.compatibility_score }}%</span>
+              </td>
+              <td>
+                {% if m.status == 'Accepted' %}
+                  <span class="badge badge-success"><i class="fa-solid fa-check"></i> Accepted</span>
+                {% elif m.status == 'Declined' %}
+                  <span class="badge badge-critical"><i class="fa-solid fa-xmark"></i> Declined</span>
+                {% else %}
+                  <span class="badge badge-warning"><i class="fa-solid fa-clock"></i> Pending Response</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if m.status == 'Accepted' or current_user.role in ('admin', 'hospital') %}
+                  <a href="tel:{{ m.phone }}" style="color: var(--primary); font-weight: 600;">
+                    <i class="fa-solid fa-phone"></i> {{ m.phone }}
+                  </a>
+                {% else %}
+                  <span style="color: var(--text-muted); font-size: 0.8rem;"><i class="fa-solid fa-lock"></i> Protected until accepted</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p style="color: var(--text-muted); padding: 1rem; text-align: center;">
+        No individual donor responses recorded yet. Broadcast is actively running across the smart network.
+      </p>
+    {% endif %}
+  </div>
+
+  <!-- Status Audit Trail History -->
+  <div class="card" style="margin-bottom: 2rem;">
+    <div class="card-header">
+      <div class="card-title">
+        <i class="fa-solid fa-clock-rotate-left text-primary"></i> Request Status History & Audit Trail
+      </div>
+    </div>
+    {% if status_history %}
+      <ul style="list-style: none; padding: 0.5rem 0;">
+        {% for h in status_history %}
+          <li style="display: flex; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border-light);">
+            <div style="color: var(--primary); font-size: 1.1rem; width: 24px; text-align: center;">
+              <i class="fa-solid fa-circle-dot"></i>
+            </div>
+            <div style="flex: 1;">
+              <div style="display: flex; justify-content: space-between;">
+                <strong>Transitioned to {{ h.new_status }}</strong>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">{{ h.changed_at }}</span>
+              </div>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0.2rem 0 0;">
+                {{ h.comments or 'System automated status update.' }} {% if h.changed_by_name %}— by {{ h.changed_by_name }}{% endif %}
+              </p>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+
+  <!-- Status Modification Controls for Authorized Users -->
+  {% if current_user and (current_user.role in ('hospital', 'blood_bank', 'admin') or current_user.id == blood_request.requester_user_id) %}
+    <div class="card" style="background: var(--bg-main);">
+      <h3 style="font-size: 1.1rem; margin-bottom: 0.75rem;">
+        <i class="fa-solid fa-sliders text-primary"></i> Manage Request Status
+      </h3>
+      <form action="{{ url_for('update_request_status', req_id=blood_request.id) }}" method="POST" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+        <div class="form-group" style="margin: 0; min-width: 220px;">
+          <label class="form-label" for="updateStatusSelect">Change Status To:</label>
+          <select name="status" id="updateStatusSelect" class="form-select">
+            <option value="Submitted" {% if blood_request.status == 'Submitted' %}selected{% endif %}>Submitted</option>
+            <option value="Matching in Progress" {% if blood_request.status == 'Matching in Progress' %}selected{% endif %}>Matching in Progress</option>
+            <option value="Donors Notified" {% if blood_request.status == 'Donors Notified' %}selected{% endif %}>Donors Notified</option>
+            <option value="Response Received" {% if blood_request.status == 'Response Received' %}selected{% endif %}>Response Received</option>
+            <option value="Fulfilled" {% if blood_request.status == 'Fulfilled' %}selected{% endif %}>Fulfilled (Completed)</option>
+            <option value="Cancelled" {% if blood_request.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin: 0; flex: 1; min-width: 220px;">
+          <label class="form-label" for="statusComments">Audit Comment:</label>
+          <input type="text" name="comments" id="statusComments" class="form-control" placeholder="e.g. Transfusion completed in OR 2">
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="height: 42px;">
+          <i class="fa-solid fa-floppy-disk"></i> Update Status
+        </button>
+      </form>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

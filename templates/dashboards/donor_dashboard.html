@@ -1,0 +1,369 @@
+{% extends 'base.html' %}
+
+{% block title %}Donor Dashboard | Smart Blood Donation Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="dashboard-grid">
+    <!-- Sidebar: Donor Profile & Quick Status -->
+    <aside>
+      <div class="sidebar-profile-card">
+        <div class="profile-avatar">
+          <i class="fa-solid fa-user-donor"></i>
+        </div>
+        <h2 style="font-size: 1.35rem; margin-bottom: 0.25rem;">{{ current_user.full_name }}</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+          <i class="fa-solid fa-location-dot"></i> {{ profile.area }}, {{ profile.city }}
+        </p>
+
+        <!-- Blood Group Hero Badge -->
+        <div style="background: var(--primary-light); padding: 1rem; border-radius: var(--radius-lg); margin-bottom: 1.25rem; border: 1px solid rgba(220, 38, 38, 0.2);">
+          <div style="font-size: 0.75rem; font-weight: 700; color: var(--primary); text-transform: uppercase;">Your Blood Group</div>
+          <div style="font-family: var(--font-heading); font-size: 2.2rem; font-weight: 800; color: var(--primary); line-height: 1;">
+            {{ profile.blood_group }}
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+            Total Donations: <strong>{{ profile.total_donations }} times</strong>
+          </div>
+        </div>
+
+        <!-- Availability Toggle Form -->
+        <div style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-md); margin-bottom: 1.25rem; border: 1px solid var(--border-color);">
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">
+            Donation Availability Status
+          </div>
+          <form action="{{ url_for('donor_toggle_availability') }}" method="POST">
+            {% if profile.is_available == 1 %}
+              <div style="color: var(--success); font-weight: 700; margin-bottom: 0.75rem; font-size: 0.95rem;">
+                <i class="fa-solid fa-circle-check"></i> Available to Donate
+              </div>
+              <button type="submit" class="btn btn-secondary btn-sm btn-block">
+                <i class="fa-solid fa-toggle-on text-success"></i> Toggle to Busy / Cooldown
+              </button>
+            {% else %}
+              <div style="color: var(--danger); font-weight: 700; margin-bottom: 0.75rem; font-size: 0.95rem;">
+                <i class="fa-solid fa-circle-pause"></i> Busy / Cooldown
+              </div>
+              <button type="submit" class="btn btn-success btn-sm btn-block">
+                <i class="fa-solid fa-toggle-off"></i> Toggle to Available
+              </button>
+            {% endif %}
+          </form>
+        </div>
+
+        <!-- Cooldown / Recovery Guideline Reminder -->
+        <div style="font-size: 0.8rem; color: var(--text-muted); text-align: left; background: #fff; border: 1px dashed var(--border-color); padding: 0.75rem; border-radius: var(--radius-md); margin-bottom: 1.25rem;">
+          <strong><i class="fa-solid fa-clock-rotate-left"></i> Last Donated:</strong> 
+          {{ profile.last_donation_date or 'No recorded prior date' }}
+          <div style="margin-top: 0.35rem; color: #64748b; font-size: 0.75rem;">
+            Standard recovery interval: ~90 days between whole blood donations. All donors must undergo on-site vitals screening before donation.
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-secondary btn-sm btn-block" data-modal-target="editProfileModal">
+          <i class="fa-solid fa-user-pen"></i> Edit Profile & Area
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <section>
+      <!-- Action Bar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem;">
+        <div>
+          <h1 style="font-size: 1.85rem; margin-bottom: 0.25rem;">Donor Portal</h1>
+          <p style="color: var(--text-muted); font-size: 0.95rem;">
+            Review urgent donation invitations, track scheduled appointments, and manage your health interval.
+          </p>
+        </div>
+        <button type="button" class="btn btn-primary" data-modal-target="bookApptModal">
+          <i class="fa-solid fa-calendar-plus"></i> Book Donation Appointment
+        </button>
+      </div>
+
+      <!-- Pending Blood Request Invitations (High Priority) -->
+      <div class="card" style="margin-bottom: 2rem; border-left: 4px solid var(--primary);">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fa-solid fa-bell text-primary"></i>
+            Active Donation Match Requests ({{ pending_matches|length }})
+          </div>
+          <span class="badge badge-critical">Action Needed</span>
+        </div>
+
+        {% if pending_matches %}
+          <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+            {% for req in pending_matches %}
+            <div style="background: var(--bg-main); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                  <span class="badge badge-blood" style="font-size: 0.85rem;">{{ req.blood_group }}</span>
+                  <span class="badge {% if req.urgency == 'Critical' %}badge-critical{% else %}badge-high{% endif %}">
+                    {{ req.urgency }}
+                  </span>
+                  <span class="badge badge-success" style="margin-left: 0.35rem;">
+                    {{ req.compatibility_score }}% Match
+                  </span>
+                </div>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Code: <strong>{{ req.request_code }}</strong></span>
+              </div>
+
+              <h3 style="font-size: 1.15rem; margin-bottom: 0.35rem;">Patient: {{ req.patient_name }}</h3>
+              <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+                <i class="fa-solid fa-hospital"></i> {{ req.hospital_name }} ({{ req.area }}, ~{{ req.distance_km }} km away)<br>
+                <i class="fa-solid fa-cubes"></i> Required: <strong>{{ req.units_needed }} Unit(s)</strong> • Date: {{ req.required_date }} ({{ req.required_time or 'Immediate' }})
+              </p>
+
+              {% if req.medical_reason %}
+                <p style="font-size: 0.85rem; background: #fff; padding: 0.5rem; border-radius: var(--radius-sm); border: 1px solid var(--border-light); margin-bottom: 1rem;">
+                  <strong>Medical Reason:</strong> {{ req.medical_reason }}
+                </p>
+              {% endif %}
+
+              <!-- Accept / Decline Form Actions -->
+              <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                <form action="{{ url_for('donor_respond_match', match_id=req.match_id) }}" method="POST" style="display: inline;">
+                  <input type="hidden" name="action" value="accept">
+                  <button type="submit" class="btn btn-success btn-sm">
+                    <i class="fa-solid fa-check"></i> Accept & Volunteer
+                  </button>
+                </form>
+
+                <form action="{{ url_for('donor_respond_match', match_id=req.match_id) }}" method="POST" style="display: inline;">
+                  <input type="hidden" name="action" value="decline">
+                  <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Are you sure you want to decline this request?');">
+                    <i class="fa-solid fa-xmark"></i> Decline
+                  </button>
+                </form>
+
+                <a href="{{ url_for('track_request', request_code=req.request_code) }}" class="btn btn-outline-primary btn-sm" style="margin-left: auto;">
+                  View Request Details
+                </a>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div style="text-align: center; padding: 2rem 1rem; color: var(--text-muted);">
+            <i class="fa-solid fa-heart-circle-check" style="font-size: 2.2rem; color: var(--success); margin-bottom: 0.5rem;"></i>
+            <p>You have no pending urgent match invitations right now.</p>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Upcoming Scheduled Appointments -->
+      <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fa-solid fa-calendar-check text-primary"></i>
+            Upcoming Donation Appointments ({{ appointments|length }})
+          </div>
+        </div>
+
+        {% if appointments %}
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Appointment Code</th>
+                  <th>Center / Blood Bank</th>
+                  <th>Date & Time Slot</th>
+                  <th>Status</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for apt in appointments %}
+                <tr>
+                  <td><strong>{{ apt.appointment_code }}</strong></td>
+                  <td>
+                    <strong>{{ apt.org_name }}</strong><br>
+                    <small style="color: var(--text-muted);">{{ apt.address }}, {{ apt.area }}</small>
+                  </td>
+                  <td>
+                    <strong>{{ apt.appointment_date }}</strong><br>
+                    <small style="color: var(--text-muted);">{{ apt.time_slot }}</small>
+                  </td>
+                  <td>
+                    <span class="badge {% if apt.status == 'Scheduled' %}badge-success{% elif apt.status == 'Completed' %}badge-routine{% else %}badge-secondary{% endif %}">
+                      {{ apt.status }}
+                    </span>
+                  </td>
+                  <td>
+                    {% if apt.status == 'Scheduled' %}
+                      <form action="{{ url_for('cancel_appointment', appt_id=apt.id) }}" method="POST" style="margin: 0;">
+                        <button type="submit" class="btn btn-secondary btn-sm" onclick="return confirm('Cancel this appointment?');">
+                          Cancel
+                        </button>
+                      </form>
+                    {% else %}
+                      <span style="color: var(--text-muted); font-size: 0.8rem;">-</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p style="color: var(--text-muted); padding: 1.5rem; text-align: center;">
+            No appointments currently scheduled. You can book a voluntary donation slot below.
+          </p>
+        {% endif %}
+      </div>
+
+      <!-- Donation History -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">
+            <i class="fa-solid fa-clock-rotate-left text-primary"></i>
+            Donation & Match History
+          </div>
+        </div>
+
+        {% if donation_history %}
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Request Code</th>
+                  <th>Patient</th>
+                  <th>Blood Group</th>
+                  <th>Hospital</th>
+                  <th>My Response</th>
+                  <th>Request Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for h in donation_history %}
+                <tr>
+                  <td><strong>{{ h.request_code }}</strong></td>
+                  <td>{{ h.patient_name }}</td>
+                  <td><span class="badge badge-blood">{{ h.blood_group }}</span></td>
+                  <td>{{ h.hospital_name }}</td>
+                  <td>
+                    <span class="badge {% if h.match_status == 'Accepted' or h.match_status == 'Completed' %}badge-success{% else %}badge-secondary{% endif %}">
+                      {{ h.match_status }}
+                    </span>
+                  </td>
+                  <td><span class="badge badge-routine">{{ h.request_status }}</span></td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p style="color: var(--text-muted); padding: 1rem; text-align: center;">No past request responses recorded yet.</p>
+        {% endif %}
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Modal 1: Book Donation Appointment -->
+<div class="modal-overlay" id="bookApptModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-size: 1.25rem;"><i class="fa-solid fa-calendar-plus text-primary"></i> Book Donation Slot</h3>
+      <button class="modal-close" data-modal-close>&times;</button>
+    </div>
+
+    <form action="{{ url_for('donor_book_appointment') }}" method="POST">
+      <div class="form-group">
+        <label class="form-label" for="apptBank">Select Blood Bank / Donation Center *</label>
+        <select name="blood_bank_user_id" id="apptBank" class="form-select" required>
+          {% for bank in blood_banks %}
+            <option value="{{ bank.user_id }}">{{ bank.org_name }} ({{ bank.area }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="apptDate">Appointment Date *</label>
+          <input type="date" name="appointment_date" id="apptDate" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="apptSlot">Preferred Time Slot *</label>
+          <select name="time_slot" id="apptSlot" class="form-select" required>
+            <option value="09:00 AM - 09:30 AM">09:00 AM - 09:30 AM</option>
+            <option value="10:00 AM - 10:30 AM">10:00 AM - 10:30 AM</option>
+            <option value="11:00 AM - 11:30 AM">11:00 AM - 11:30 AM</option>
+            <option value="02:00 PM - 02:30 PM">02:00 PM - 02:30 PM</option>
+            <option value="03:30 PM - 04:00 PM">03:30 PM - 04:00 PM</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="apptNotes">Donor Notes (Optional)</label>
+        <input type="text" name="donor_notes" id="apptNotes" class="form-control" placeholder="e.g. Whole blood or platelet donation">
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
+        Confirm Appointment Booking
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal 2: Edit Donor Profile -->
+<div class="modal-overlay" id="editProfileModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 style="font-size: 1.25rem;"><i class="fa-solid fa-user-pen text-primary"></i> Edit Donor Profile</h3>
+      <button class="modal-close" data-modal-close>&times;</button>
+    </div>
+
+    <form action="{{ url_for('donor_update_profile') }}" method="POST">
+      <div class="form-group">
+        <label class="form-label" for="editName">Full Name</label>
+        <input type="text" name="full_name" id="editName" class="form-control" value="{{ current_user.full_name }}" required>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="editPhone">Phone Number</label>
+          <input type="tel" name="phone" id="editPhone" class="form-control" value="{{ current_user.phone }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="editAge">Age</label>
+          <input type="number" name="age" id="editAge" class="form-control" min="18" max="65" value="{{ profile.age }}">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="editArea">City Area / District</label>
+        <select name="area" id="editArea" class="form-select">
+          {% for area in demo_areas %}
+            <option value="{{ area }}" {% if area == profile.area %}selected{% endif %}>{{ area }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="editLastDate">Last Donation Date</label>
+        <input type="date" name="last_donation_date" id="editLastDate" class="form-control" value="{{ profile.last_donation_date or '' }}">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="editMedNotes">Medical Notes / Preferences</label>
+        <textarea name="medical_notes" id="editMedNotes" class="form-control">{{ profile.medical_notes or '' }}</textarea>
+      </div>
+
+      <div class="form-check">
+        <input type="checkbox" name="consent_contact" id="editConsent" class="form-check-input" {% if profile.consent_contact == 1 %}checked{% endif %}>
+        <label class="form-check-label" for="editConsent">
+          Consent to receive emergency match notifications.
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1.25rem;">
+        Save Changes
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}

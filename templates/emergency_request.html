@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Emergency Blood Request Broadcast | Smart Blood Donation Management System{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 2.5rem 0 4rem; max-width: 860px;">
+  <!-- Header with Emergency Alert Accent -->
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <span class="badge badge-critical" style="font-size: 0.9rem; padding: 0.4rem 1rem; margin-bottom: 0.75rem;">
+      <i class="fa-solid fa-truck-medical"></i> High-Priority Emergency Broadcast
+    </span>
+    <h1 style="font-size: 2.4rem; margin-bottom: 0.5rem;">Submit Emergency Blood Request</h1>
+    <p style="color: var(--text-muted); font-size: 1.05rem;">
+      Broadcast an urgent transfusion alert to nearby registered donors and certified blood banks.
+    </p>
+  </div>
+
+  <!-- Medical Emergency Notice -->
+  <div class="alert alert-danger" style="display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 2rem;">
+    <i class="fa-solid fa-circle-exclamation" style="font-size: 1.5rem; margin-top: 0.2rem;"></i>
+    <div style="font-size: 0.875rem; line-height: 1.6;">
+      <strong>Critical Safety & Emergency Guideline:</strong> This digital dispatch tool connects volunteer donor candidates and aggregates bank inventory for rapid response. For immediate life-threatening resuscitation or urgent trauma surgery, please coordinate directly with your attending hospital trauma team or dial local emergency services.
+    </div>
+  </div>
+
+  <!-- Emergency Form Card -->
+  <div class="card" style="box-shadow: var(--shadow-xl); border-top: 5px solid var(--primary); padding: 2.25rem;">
+    <form action="{{ url_for('emergency_request') }}" method="POST" id="emergencyRequestForm">
+      <h3 style="font-size: 1.2rem; margin-bottom: 1.25rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
+        <i class="fa-solid fa-bed-pulse text-primary"></i> Patient & Clinical Requirements
+      </h3>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="emPatientName">Patient Full Name *</label>
+          <input type="text" name="patient_name" id="emPatientName" class="form-control" placeholder="e.g. Rahul Sharma / Aarav Patel" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="emBloodGroup">Required Blood Group *</label>
+          <select name="blood_group" id="emBloodGroup" class="form-select" required>
+            {% for bg in blood_groups %}
+              <option value="{{ bg }}" {% if request.args.get('blood_group') == bg %}selected{% elif bg == 'O-' %}selected{% endif %}>{{ bg }} Blood Group</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="emUnits">Units Needed *</label>
+          <input type="number" name="units_needed" id="emUnits" class="form-control" min="1" max="20" value="2" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="emUrgency">Urgency Level *</label>
+          <select name="urgency" id="emUrgency" class="form-select" required>
+            <option value="Critical" selected>🚨 Critical (Immediate / < 4 Hours)</option>
+            <option value="High">⚠️ High (Within 24 Hours)</option>
+            <option value="Routine">ℹ️ Routine (Scheduled Surgery / Therapy)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="emDate">Required By Date *</label>
+          <input type="date" name="required_date" id="emDate" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="emTime">Required Time Frame</label>
+          <input type="text" name="required_time" id="emTime" class="form-control" placeholder="e.g. ASAP / 10:00 AM">
+        </div>
+      </div>
+
+      <h3 style="font-size: 1.2rem; margin: 1.5rem 0 1.25rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
+        <i class="fa-solid fa-hospital text-primary"></i> Hospital & Destination Details
+      </h3>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="emHospital">Hospital / Medical Center *</label>
+          <input type="text" name="hospital_name" id="emHospital" class="form-control" placeholder="e.g. Apollo Hospital / AIIMS Trauma Center" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="emArea">City Area / District *</label>
+          <select name="area" id="emArea" class="form-select" required>
+            {% for area in demo_areas %}
+              <option value="{{ area }}" {% if request.args.get('area') == area %}selected{% endif %}>{{ area }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="emAddress">Hospital Address & Ward / Bed Room</label>
+        <input type="text" name="hospital_address" id="emAddress" class="form-control" placeholder="e.g. Medical Enclave, ICU Ward 3">
+      </div>
+
+      <h3 style="font-size: 1.2rem; margin: 1.5rem 0 1.25rem; border-bottom: 1px solid var(--border-light); padding-bottom: 0.5rem;">
+        <i class="fa-solid fa-phone text-primary"></i> Attending Contact & Medical Notes
+      </h3>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="emPhone">Emergency Attendant / Doctor Phone *</label>
+          <input type="tel" name="contact_phone" id="emPhone" class="form-control" placeholder="e.g. +91 98765 43210" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="emReason">Medical Diagnosis / Reason</label>
+          <input type="text" name="medical_reason" id="emReason" class="form-control" placeholder="e.g. Emergency trauma surgery, postpartum care">
+        </div>
+      </div>
+
+      <div style="background: var(--bg-main); padding: 1rem; border-radius: var(--radius-md); margin: 1.5rem 0; font-size: 0.85rem; color: var(--text-muted);">
+        <i class="fa-solid fa-bolt" style="color: var(--primary);"></i>
+        <strong>Workflow Automation:</strong> Submitting will automatically assign a unique tracking ID (e.g. <code>REQ-2026-XXXX</code>), match compatible nearby donors, and simulate instant in-app match alerts.
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="submitEmergencyBtn" style="font-size: 1.1rem;">
+        <i class="fa-solid fa-paper-plane"></i> Dispatch Emergency Request
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Set default date to today
+  document.addEventListener('DOMContentLoaded', () => {
+    const dateInput = document.getElementById('emDate');
+    if (dateInput && !dateInput.value) {
+      const today = new Date().toISOString().split('T')[0];
+      dateInput.value = today;
+      dateInput.min = today;
+    }
+  });
+</script>
+{% endblock %}

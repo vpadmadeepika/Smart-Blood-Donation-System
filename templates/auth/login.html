@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In | Smart Blood Donation Management System{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 3rem 0 5rem; max-width: 520px;">
+  <!-- Auth Navigation Tabs -->
+  <div style="display: flex; background: #e2e8f0; border-radius: var(--radius-full); padding: 4px; margin-bottom: 1.75rem;">
+    <a href="{{ url_for('login') }}" class="btn btn-sm btn-block" style="background: #ffffff; color: var(--primary); font-weight: 700; border-radius: var(--radius-full); box-shadow: var(--shadow-sm);">
+      <i class="fa-solid fa-right-to-bracket"></i> Sign In
+    </a>
+    <a href="{{ url_for('register') }}" class="btn btn-sm btn-block" style="background: transparent; color: var(--text-muted); font-weight: 600; border-radius: var(--radius-full);">
+      <i class="fa-solid fa-user-plus"></i> Create Account
+    </a>
+  </div>
+
+  <!-- Login Card -->
+  <div class="card" style="box-shadow: var(--shadow-xl); padding: 2.5rem; border-top: 5px solid var(--primary); background: #ffffff;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <div class="brand-icon" style="margin: 0 auto 1rem; width: 52px; height: 52px; font-size: 1.6rem;">
+        <i class="fa-solid fa-droplet"></i>
+      </div>
+      <h1 style="font-size: 1.85rem; margin-bottom: 0.35rem;">Portal Sign In</h1>
+      <p style="color: var(--text-muted); font-size: 0.925rem;">
+        Access your role dashboard to manage donations, requests, or inventory.
+      </p>
+    </div>
+
+    <!-- Login Form -->
+    <form action="{{ url_for('login') }}{% if request.args.get('next') %}?next={{ request.args.get('next') }}{% endif %}" method="POST" id="loginForm">
+      <!-- Email Address -->
+      <div class="form-group">
+        <label class="form-label" for="loginEmail">Email Address or Username</label>
+        <div style="position: relative;">
+          <input type="text" name="email" id="loginEmail" class="form-control" placeholder="name@example.com" required style="padding-left: 2.6rem;" autocomplete="username">
+          <i class="fa-solid fa-envelope" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-light);"></i>
+        </div>
+      </div>
+
+      <!-- Password with Show/Hide Toggle -->
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <label class="form-label" for="loginPassword" style="margin-bottom: 0;">Password</label>
+          <a href="{{ url_for('forgot_password') }}" style="font-size: 0.8rem; font-weight: 600; color: var(--primary);">
+            Forgot Password?
+          </a>
+        </div>
+        <div style="position: relative;">
+          <input type="password" name="password" id="loginPassword" class="form-control" placeholder="••••••••" required style="padding-left: 2.6rem; padding-right: 2.75rem;" autocomplete="current-password">
+          <i class="fa-solid fa-lock" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-light);"></i>
+          <button type="button" class="password-toggle-btn" data-target="loginPassword" aria-label="Toggle password visibility" style="position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 0.25rem;">
+            <i class="fa-solid fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginSubmitBtn" style="margin-top: 1.25rem;">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In to Portal
+      </button>
+    </form>
+
+    <!-- 1-Click Demo Accounts Quick-Fill for PBL Challenge -->
+    <div style="margin-top: 2rem; border-top: 1px solid var(--border-light); padding-top: 1.5rem;">
+      <div style="font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.75rem; text-align: center; letter-spacing: 0.05em;">
+        <i class="fa-solid fa-bolt" style="color: var(--warning);"></i> 1-Click Role Demo Sign-In
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+        <button type="button" class="btn btn-secondary btn-sm demo-login-btn" data-email="alex.donor@example.com" data-password="donor123" title="Universal Donor O-">
+          ❤️ Donor (O- Alex)
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm demo-login-btn" data-email="priya.patel@example.com" data-password="donor123" title="Active Donor A+">
+          ❤️ Donor (A+ Priya)
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm demo-login-btn" data-email="sarah.jenkins@example.com" data-password="recipient123" title="Emergency Recipient">
+          🩹 Recipient (Sarah)
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm demo-login-btn" data-email="stmary.er@hospital.org" data-password="hospital123" title="Hospital ER Desk">
+          🩺 Hospital (St. Mary)
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm demo-login-btn" data-email="hope.life@ngo.org" data-password="ngo123" title="NGO Blood Drive Foundation">
+          🤝 NGO (Hope & Life)
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm demo-login-btn" data-email="central.bank@metroblood.org" data-password="bank123" title="Central Blood Bank">
+          🩸 Blood Bank (Central)
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm demo-login-btn" data-email="admin@bloodcare.org" data-password="admin123" style="grid-column: span 2;" title="Platform Administrator">
+          🛡️ Platform Administrator
+        </button>
+      </div>
+    </div>
+
+    <!-- Switch to Register Link -->
+    <div style="text-align: center; margin-top: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">
+      New to Smart Blood Care? 
+      <a href="{{ url_for('register') }}" style="font-weight: 700; color: var(--primary);">Create an Account</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
